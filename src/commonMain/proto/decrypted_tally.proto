@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+import "common.proto";
+
+option java_package = "org.cryptobiotic.protogen";
+option java_outer_classname = "DecryptedTallyOrBallotProto";
+
+// Decrypted Tally or ballot, eg spoiled ballot or decrypted Ballot for RLA
+message DecryptedTallyOrBallot {
+  string id = 1; // tallyId or ballotId
+  repeated DecryptedContest contests = 2;
+  UInt256 election_id = 3;     // unique election identifier
+}
+
+message DecryptedContest {
+  string contest_id = 1; // matches ContestDescription.contest_id
+  repeated DecryptedSelection selections = 2;
+  DecryptedContestData decrypted_contest_data = 3; // optional, decrypted ballot only
+}
+
+message DecryptedSelection {
+  string selection_id = 1; // matches SelectionDescription.selection_id
+  uint32 tally = 2;        // decrypted vote
+  ElementModP b_over_m = 3;   // T = (B / M) eq 65
+  ElGamalCiphertext encrypted_vote = 4; // same as EncryptedTally.Selection.encrypted_vote
+  ChaumPedersenProof proof = 5;
+}
+
+message DecryptedContestData {
+  ContestData contest_data = 1;
+  HashedElGamalCiphertext encrypted_contest_data = 2; // matches EncryptedBallotContest.encrypted_contest_data
+  ChaumPedersenProof proof = 3;
+  ElementModP beta = 4; //  β = C0^s mod p ; needed to verify 10.2
+}

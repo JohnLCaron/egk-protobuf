@@ -1,0 +1,29 @@
+package org.cryptobiotic.protoconvert
+
+import electionguard.core.*
+import io.kotest.property.checkAll
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import org.cryptobiotic.core.*
+
+class ContestDataConvertTest {
+
+    @Test
+    fun convertContestData() {
+        runTest {
+            checkAll(
+                validResiduesOfP(productionGroup()),
+                byteArrays(21),
+                uint256s(),
+            ) { p, c1, u ->
+                val context = productionGroup()
+                val target = HashedElGamalCiphertext(p, c1, u, 21)
+                assertEquals(target.numBytes, target.c1.size)
+
+                val proto = target.publishProto()
+                val roundtrip = context.importHashedCiphertext(proto)
+                assertEquals(target, roundtrip)
+            }
+        }
+    }
+}

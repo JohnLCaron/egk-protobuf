@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+import "common.proto";
+
+option java_package = "org.cryptobiotic.protogen";
+option java_outer_classname = "EncryptedTallyProto";
+
+// Encrypted Tally of some collection of ballots.
+message EncryptedTally {
+  string tally_id = 1;
+  repeated EncryptedTallyContest contests = 2;
+  repeated string cast_ballot_ids = 3;
+  UInt256 election_id = 11;     // unique election identifier
+}
+
+message EncryptedTallyContest {
+  string contest_id = 1; // matches ContestDescription.contest_id
+  uint32 sequence_order = 2; // matches ContestDescription.sequence_order
+  repeated EncryptedTallySelection selections = 3;
+}
+
+message EncryptedTallySelection {
+  string selection_id = 1; // matches SelectionDescription.selection_id
+  uint32 sequence_order = 2; // matches SelectionDescription.sequence_order
+  ElGamalCiphertext encrypted_vote = 3;  // accumulation over all the cast ballots for this selection
+}

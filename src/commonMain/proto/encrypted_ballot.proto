@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+import "common.proto";
+
+option java_package = "org.cryptobiotic.protogen";
+option java_outer_classname = "EncryptedBallotProto";
+
+// An encrypted ballot that has been cast or spoiled
+message EncryptedBallot {
+  enum BallotState {
+    UNKNOWN = 0;
+    CAST = 1;
+    SPOILED = 2;
+  }
+
+  string ballot_id = 1; // a unique Ballot ID created by the external system
+  string ballot_style_id = 2; // The ballot_style_id of the BallotStyle in the Election Manifest
+  string encrypting_device = 3; // voting device information, section 3.4.3, 3.7
+  int64 timestamp = 4; // Timestamp at which the ballot encryption is generated, in seconds since the epoch UTC.
+  bytes code_baux = 5; // B_aux in eq 59
+  UInt256 confirmation_code = 6; // ballot tracking code, H(B), eq 59 or eq 96 for preencrypt
+  UInt256 election_id = 11;     // unique election identifier
+  repeated EncryptedBallotContest contests = 7;
+  BallotState state = 8;
+
+  ElGamalCiphertext encrypted_sn = 12;
+  bool is_preencrypt = 9;
+  UInt256 primary_nonce = 10; // only when challenged / uncast
+}
+
+// Encrypted selections for a specific contest.
+message EncryptedBallotContest {
+  string contest_id = 1; // matches the ContestDescription.contest_id
+  uint32 sequence_order = 2; // matches the ContestDescription.sequence_order
+  uint32 votes_allowed = 3; // matches the ContestDescription.votes_allowed
+  UInt256 contest_hash = 4; // eq 58
+  repeated EncryptedBallotSelection selections = 5;
+  ChaumPedersenRangeProofKnownNonce proof = 6;  // Proof the sum of the selections does not exceed the maximum
+  HashedElGamalCiphertext encrypted_contest_data = 7; // see 3.3.4
+
+  PreEncryption pre_encryption = 8; // only for pre-encryptions
+}
+
+// Encryption of a specific selection.
+message EncryptedBallotSelection {
+  string selection_id = 1; // matches the SelectionDescription.selection_id
+  uint32 sequence_order = 2; // matches the SelectionDescription.sequence_order
+  ElGamalCiphertext encrypted_vote = 3; // The encrypted representation of the vote field
+  ChaumPedersenRangeProofKnownNonce proof = 4; // Proof the selection is an encryption of 0 or 1
+}
+
+message ChaumPedersenRangeProofKnownNonce {
+  repeated ChaumPedersenProof proofs = 1; // one for each in [0, limit]
+}
+
+/////////////////////////////////////////
+
+// Selection vectors generated from pre-encrypted ballots are indistinguishable from those produced
+// by standard org.cryptobiotic. However, the election record for each pre-encrypted ballot includes a
+// significant amount of additional information. Specifically, for each cast ballot, the election record
+// should contain
+//  • the standard org.cryptobiotic encrypted ballot data consisting of selection vectors for each con-
+//    test together with all the standard associated zero-knowledge proofs that the ballot is well-
+//    formed,
+//  • the selection hashes for every option on the ballot – sorted numerically within each contest,
+//  • and the short codes and pre-encryption selection vectors associated with all selections on the
+//    ballot made by the voter.
+//
+
+message PreEncryption {
+  UInt256 preencryption_hash = 1; // (95)
+  // selection hashes for every option on the ballot and L null vectors
+  repeated UInt256 all_selection_hashes = 2; // size = nselections + limit ; sorted numerically
+  // short codes and selection vectors for voter selections, plus additional null selections to make exactly L vectors.
+  repeated SelectionVector selected_vectors = 3; // size = limit ; sorted numerically
+}
+
+// Ψi,m = ⟨E1 , E2 , . . . , Em ⟩  (92)
+message SelectionVector {
+  UInt256 selection_hash = 1; // ψi (93)
+  string short_code = 2;
+  repeated ElGamalCiphertext encryptions = 3; // Ej, size = nselections, in order by sequence_order
+}

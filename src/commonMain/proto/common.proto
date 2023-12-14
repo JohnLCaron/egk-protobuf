@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+option java_package = "org.cryptobiotic.protogen";
+option java_outer_classname = "CommonProto";
+
+// (incomplete) strawman for contest data (section 3.3.7)
+// "The contest data can contain different kinds of information such as undervote, null vote, and
+// overvote information together with the corresponding selections, the text captured for write-in
+// options and other data associated to the contest."
+message ContestData {
+  enum Status {
+    normal = 0;
+    null_vote = 1;
+    over_vote = 2;
+    under_vote = 3;
+  }
+  Status status = 1;
+  repeated uint32 over_votes = 2;  // list of selection sequence_number for this contest
+  repeated string write_ins = 3; // list of write_in strings
+  string filler = 4; // fill chars to ensure uniform block size
+}
+
+// A 4096 bit unsigned int, big-endian.
+// A member of the group Z mod P
+message ElementModP {
+  bytes value = 1;
+}
+
+// A 256 bit unsigned int, big-endian.
+// A member of the group Z mod Q
+message ElementModQ {
+  bytes value = 1;
+}
+
+message ElGamalCiphertext {
+  ElementModP pad = 1;   // g^R
+  ElementModP data = 2;  // K^(V+R)
+}
+
+message ChaumPedersenProof {
+  ElementModQ challenge = 1; // c in the spec
+  ElementModQ response = 2; // v in the spec
+}
+
+message HashedElGamalCiphertext {
+  ElementModP c0 = 1;
+  bytes c1 = 2;
+  UInt256 c2 = 3;
+  uint32 numBytes = 4;
+}
+
+message SchnorrProof {
+  ElementModP public_key = 1; // K_ij in the spec
+  ElementModQ challenge = 2; // c_ij in the spec
+  ElementModQ response = 3; // v_ij in the spec
+}
+
+// A 256 bit unsigned int, big-endian. Always exactly 32 bytes.
+// The output of the hash function.
+message UInt256 {
+  bytes value = 1;
+}
+
