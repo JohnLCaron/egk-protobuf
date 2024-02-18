@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform")
     alias(libs.plugins.serialization)
     application
+    id("maven-publish")
 }
 
 repositories {
@@ -9,12 +10,12 @@ repositories {
 }
 
 group = "egk-protobuf"
-version = "2.0.3-SNAPSHOT"
+version = "2.0.4-SNAPSHOT"
 
 kotlin {
     jvm {
         compilations.all {
-            kotlinOptions.jvmTarget = "1.8"
+            kotlinOptions.jvmTarget = "17"
             kotlinOptions.freeCompilerArgs = listOf(
                 "-Xexpect-actual-classes",
                 "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi,kotlinx.serialization.ExperimentalSerializationApi"
@@ -42,7 +43,7 @@ kotlin {
         val commonMain by
         getting {
             dependencies {
-                implementation(files("libs/egklib-jvm-2.0.3-SNAPSHOT.jar"))
+                implementation(files("libs/egklib-jvm-2.0.4-SNAPSHOT.jar"))
                 implementation(libs.bundles.eglib)
             }
         }
@@ -80,7 +81,7 @@ kotlin {
 // val protoGenSource by extra("build/generated/source/proto")
 
 /*
-protoc --pbandk_out=./egklib/src/commonMain/kotlin/ --proto_path=./egklib/src/commonMain/proto \
+protoc --pbandk_out=./src/commonMain/kotlin/ --proto_path=./src/commonMain/proto \
                     common.proto encrypted_ballot.proto encrypted_tally.proto \
                     election_record.proto manifest.proto \
                     plaintext_ballot.proto decrypted_tally.proto \
@@ -96,7 +97,7 @@ val compileProtobuf =
              * } */
             // TODO lame
             val commandLineStr =
-                "protoc --pbandk_out=./egklib/src/commonMain/kotlin/ --proto_path=./egklib/src/commonMain/proto " +
+                "protoc --pbandk_out=./src/commonMain/kotlin/ --proto_path=./src/commonMain/proto " +
                         "common.proto encrypted_ballot.proto encrypted_tally.proto " +
                         "election_record.proto manifest.proto " +
                         "plaintext_ballot.proto decrypted_tally.proto " +
@@ -128,4 +129,23 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>()
     .configureEach { kotlinOptions.freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn" }
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
+}
+
+// publish github package
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/votingworks/electionguard-kotlin-multiplatform")
+            credentials {
+                username = project.findProperty("github.user") as String? ?: System.getenv("USERNAME")
+                password = project.findProperty("github.key") as String? ?: System.getenv("TOKEN")
+            }
+        }
+    }
+    publications {
+        register<MavenPublication>("gpr") {
+            from(components["java"])
+        }
+    }
 }

@@ -2,8 +2,9 @@
 
 _last update 11/14/2023_
 
-This adds protobuf support for ElectionGuard-Kotlin-Multiplatform (EGK)
-available under an MIT-style open source [License](LICENSE). 
+This adds protobuf support to [ElectionGuard-Kotlin-Multiplatform (EGK)](https://github.com/votingworks/electionguard-kotlin-multiplatform).
+
+Available under an MIT-style open source [License](LICENSE). 
 
 Currently Java 17 is required.
 
